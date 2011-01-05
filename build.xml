@@ -1,0 +1,72 @@
+<project name="NBIAAdapter" default="dist" basedir=".">
+  <description>
+    Java code to interface with NBIA.
+  </description>
+  
+  <!-- set global properties for this build -->
+  <property name="src" location="src"/>
+  <property name="build" location="build"/>
+  <property name="dist"  location="dist"/>
+
+  <!-- Set this to the location of the nbia grid clent jars. I
+       downloaded nbia_grid_client-jars-full_4.5.zip from
+       https://gforge.nci.nih.gov/frs/download.php/8985/nbia_grid_client-jars-full_4.5.zip.-->
+  <property name="lib.dir"
+	    value="/home/cpatrick/Builds/nbia_grid_client-jars-full_4.5/" />
+
+  <!-- classpath definition -->
+  <path id="classpath"> 
+    <fileset dir="${lib.dir}" includes="**/*.jar" />
+  </path>
+
+  <target name="init">
+
+    <!-- Create the time stamp -->
+    <tstamp />
+
+    <!-- Create the build directory structure used by compile -->
+    <mkdir dir="${build}"/>
+
+  </target>
+
+  <target name="compile" 
+	  depends="init" 
+	  description="compile the source" >
+
+    <!-- Compile the java code from ${src} into ${build} -->
+    <javac srcdir="${src}" destdir="${build}" classpathref="classpath"
+	   includeantruntime="false" />
+
+  </target>
+
+  <target name="dist" depends="compile"
+        description="generate the distribution" >
+
+    <!-- Create the distribution directory -->
+    <mkdir dir="${dist}/lib"/>
+
+    <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
+    <jar jarfile="${dist}/lib/${ant.project.name}-${DSTAMP}.jar"
+	 basedir="${build}"/>
+
+  </target>
+
+  <target name="run" depends="dist">
+    <java fork="true" classname="NBIAAdapter">
+      <classpath>
+        <path refid="classpath"/>
+        <path location="${dist}/lib/${ant.project.name}-${DSTAMP}.jar"/>
+      </classpath>
+    </java>
+  </target>
+
+  <target name="clean"
+          description="clean up" >
+
+    <!-- Delete the ${build} and ${dist} dinrectory trees -->
+    <delete dir="${build}"/>
+    <delete dir="${dist}"/>
+
+  </target>
+
+</project>
