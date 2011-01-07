@@ -15,15 +15,46 @@ import org.cagrid.transfer.context.client.TransferServiceContextClient;
 import org.cagrid.transfer.context.client.helper.TransferClientHelper;
 import org.cagrid.transfer.context.stubs.types.TransferServiceContextReference;
 
+import jargs.gnu.CmdLineParser;
+
 public class NBIAAdapter
 {
-  static final String gridServiceUrl = 
-    "http://imaging.nci.nih.gov/wsrf/services/cagrid/NCIACoreService";
-
-  static final String clientDownLoadLocation = "NBIAGridClientDownload";
+  public static String clientDownloadLocation;
+  
+  private static void printUsage() 
+  {
+    System.err.println( "Usage: NBIAAdapter [-v,--verbose] [-s,--saveconfig filename]" +
+                        "[-l,--loadconfig]" );
+  }
 
   public static void main( String args[] ) throws Exception
   {
+    CmdLineParser parser = new CmdLineParser();
+    CmdLineParser.Option verboseOption = parser.addBooleanOption( 'v', "verbose" );
+    CmdLineParser.Option saveConfigOption = parser.addStringOption( 's', "saveconfig" );
+    CmdLineParser.Option loadConfigOption = parser.addStringOption( 'l', "loadconfig" );
+    
+    Configurator configurator = new Configurator();
+    String gridServiceUrl = configurator.getProps().getProperty( "gridServiceUrl" );
+    clientDownloadLocation = configurator.getProps().getProperty( "clientDownloadLocation" );
+    
+    try
+    {
+      parser.parse( args );
+    }
+    catch( CmdLineParser.OptionException e)
+    {
+      System.err.println(e.getMessage());
+      printUsage();
+      System.exit( 2 );
+    }
+    
+    Boolean verbose = (Boolean)parser.getOptionValue( verboseOption, Boolean.FALSE );
+    String saveConfig = (String)parser.getOptionValue( saveConfigOption, "" );
+    String loadConfig = (String)parser.getOptionValue( loadConfigOption, "" );
+    
+    configurator.save( "foo.txt" );
+    
     String seriesInstanceUID = "1.3.6.1.4.1.9328.50.1.8862";
     System.out.println(seriesInstanceUID);
     
@@ -85,7 +116,7 @@ public class NBIAAdapter
   private static String downloadLocation()
   {
     String localClient= System.getProperty( "java.io.tmpdir" ) + 
-      File.separator + clientDownLoadLocation;
+      File.separator + clientDownloadLocation;
     if( !new File( localClient ).exists() )
       {
       new File( localClient ).mkdir();
