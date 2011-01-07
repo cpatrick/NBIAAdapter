@@ -1,3 +1,5 @@
+package com.kitware.nbia;
+
 import gov.nih.nci.cagrid.ncia.client.NCIACoreServiceClient;
 import gov.nih.nci.ivi.utils.ZipEntryInputStream;
 
