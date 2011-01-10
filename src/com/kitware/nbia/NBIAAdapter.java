@@ -20,41 +20,26 @@ import jargs.gnu.CmdLineParser;
 public class NBIAAdapter
 {
   public static String clientDownloadLocation;
+  public static String gridServiceUrl;
+  
+  private static Boolean verbose;
   
   private static void printUsage() 
   {
     System.err.println( "Usage: NBIAAdapter [-v,--verbose] [-s,--saveconfig filename]" +
-                        "[-l,--loadconfig]" );
+                        "[-l,--loadconfig] [-t,--test]" );
   }
-
-  public static void main( String args[] ) throws Exception
+  
+  private static void verbosePrint( String out )
   {
-    CmdLineParser parser = new CmdLineParser();
-    CmdLineParser.Option verboseOption = parser.addBooleanOption( 'v', "verbose" );
-    CmdLineParser.Option saveConfigOption = parser.addStringOption( 's', "saveconfig" );
-    CmdLineParser.Option loadConfigOption = parser.addStringOption( 'l', "loadconfig" );
-    
-    Configurator configurator = new Configurator();
-    String gridServiceUrl = configurator.getProps().getProperty( "gridServiceUrl" );
-    clientDownloadLocation = configurator.getProps().getProperty( "clientDownloadLocation" );
-    
-    try
+    if( verbose )
     {
-      parser.parse( args );
+      System.out.println( out );
     }
-    catch( CmdLineParser.OptionException e)
-    {
-      System.err.println(e.getMessage());
-      printUsage();
-      System.exit( 2 );
-    }
-    
-    Boolean verbose = (Boolean)parser.getOptionValue( verboseOption, Boolean.FALSE );
-    String saveConfig = (String)parser.getOptionValue( saveConfigOption, "" );
-    String loadConfig = (String)parser.getOptionValue( loadConfigOption, "" );
-    
-    configurator.save( "foo.txt" );
-    
+  }
+  
+  private static void runTest() throws Exception
+  {
     String seriesInstanceUID = "1.3.6.1.4.1.9328.50.1.8862";
     System.out.println(seriesInstanceUID);
     
@@ -109,7 +94,66 @@ public class NBIAAdapter
     
     zis.close();
     tclient.destroy();
+  }
+
+  public static void main( String args[] ) throws Exception
+  {
+    CmdLineParser parser = new CmdLineParser();
+    CmdLineParser.Option verboseOption = parser.addBooleanOption( 'v', "verbose" );
+    CmdLineParser.Option saveConfigOption = parser.addStringOption( 's', "saveconfig" );
+    CmdLineParser.Option loadConfigOption = parser.addStringOption( 'l', "loadconfig" );
+    CmdLineParser.Option testOption = parser.addBooleanOption( 't', "test" );
+    CmdLineParser.Option helpOption = parser.addBooleanOption( 'h', "help" );
     
+    Configurator configurator = new Configurator();
+    gridServiceUrl = configurator.getProps().getProperty( "gridServiceUrl" );
+    clientDownloadLocation = configurator.getProps().getProperty( "clientDownloadLocation" );
+    
+    try
+    {
+      parser.parse( args );
+    }
+    catch( CmdLineParser.OptionException e)
+    {
+      System.err.println(e.getMessage());
+      printUsage();
+      System.exit( 2 );
+    }
+    
+    verbose = (Boolean)parser.getOptionValue( verboseOption, Boolean.FALSE );
+    String saveConfig = (String)parser.getOptionValue( saveConfigOption, "" );
+    String loadConfig = (String)parser.getOptionValue( loadConfigOption, "" );
+    Boolean test = (Boolean)parser.getOptionValue( testOption, Boolean.FALSE );
+    Boolean help = (Boolean)parser.getOptionValue( helpOption, Boolean.FALSE );
+    
+    // Print usage information
+    if( help )
+    {
+      printUsage();
+      System.exit( 0 );
+    }
+    
+    // Load the config file into the configurator
+    if( loadConfig != "" )
+    {
+      verbosePrint("Loading config: " + loadConfig);
+      configurator.load( loadConfig );
+    }
+    
+    // Run the testing code from the NBIA wiki if asked to
+    if( test )
+    {
+      verbosePrint("Running Test from NBIA Wiki.");
+      runTest();
+    }
+    
+    
+    // Save the configuration
+    if( saveConfig != "" )
+    {
+      verbosePrint("Saving config: " + saveConfig);
+      configurator.save( saveConfig );
+    }
   }
   
   
