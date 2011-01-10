@@ -2,6 +2,7 @@ package com.kitware.nbia;
 
 import gov.nih.nci.cagrid.ncia.client.NCIACoreServiceClient;
 import gov.nih.nci.ivi.utils.ZipEntryInputStream;
+import jargs.gnu.CmdLineParser;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -14,8 +15,6 @@ import java.util.zip.ZipInputStream;
 import org.cagrid.transfer.context.client.TransferServiceContextClient;
 import org.cagrid.transfer.context.client.helper.TransferClientHelper;
 import org.cagrid.transfer.context.stubs.types.TransferServiceContextReference;
-
-import jargs.gnu.CmdLineParser;
 
 public class NBIAAdapter
 {
@@ -40,13 +39,26 @@ public class NBIAAdapter
   
   private static void runTest() throws Exception
   {
-    String seriesInstanceUID = "1.3.6.1.4.1.9328.50.1.8862";
-    System.out.println(seriesInstanceUID);
+    String uuid = "1.3.6.1.4.1.9328.50.1.8862";
+    fetchData( uuid, "" );
+  }
+  
+  private static void fetchData( String uuid, String output ) throws Exception
+  {
+    String finalOutput;
+    if( output == "" )
+    {
+      finalOutput = defaultDownloadLocation();
+    }
+    else
+    {
+      finalOutput = output;
+    }
     
     NCIACoreServiceClient client = new NCIACoreServiceClient( gridServiceUrl );
     
     TransferServiceContextReference tscr = 
-      client.retrieveDicomDataBySeriesUID( seriesInstanceUID );
+      client.retrieveDicomDataBySeriesUID( uuid );
     
     TransferServiceContextClient tclient = 
       new TransferServiceContextClient( tscr.getEndpointReference() );
@@ -63,7 +75,7 @@ public class NBIAAdapter
     ZipInputStream zis = new ZipInputStream(istream);
     ZipEntryInputStream zeis = null;
     BufferedInputStream bis = null;
-    String unzzipedFile = downloadLocation();
+    String unzzipedFile = finalOutput;
     while(true) 
       {
       try 
@@ -104,6 +116,8 @@ public class NBIAAdapter
     CmdLineParser.Option loadConfigOption = parser.addStringOption( 'l', "loadconfig" );
     CmdLineParser.Option testOption = parser.addBooleanOption( 't', "test" );
     CmdLineParser.Option helpOption = parser.addBooleanOption( 'h', "help" );
+    CmdLineParser.Option uuidOption = parser.addStringOption( 'u', "--uuid" );
+    CmdLineParser.Option outputOption = parser.addStringOption( 'o', "--output" );
     
     Configurator configurator = new Configurator();
     gridServiceUrl = configurator.getProps().getProperty( "gridServiceUrl" );
@@ -125,6 +139,8 @@ public class NBIAAdapter
     String loadConfig = (String)parser.getOptionValue( loadConfigOption, "" );
     Boolean test = (Boolean)parser.getOptionValue( testOption, Boolean.FALSE );
     Boolean help = (Boolean)parser.getOptionValue( helpOption, Boolean.FALSE );
+    String uuid = (String)parser.getOptionValue( uuidOption, "" );
+    String output = (String)parser.getOptionValue( outputOption, "" );
     
     // Print usage information
     if( help )
@@ -147,6 +163,12 @@ public class NBIAAdapter
       runTest();
     }
     
+    // Run the application as intended 
+    if( uuid != "" )
+    {
+      fetchData( uuid, output );
+    }
+    
     
     // Save the configuration
     if( saveConfig != "" )
@@ -157,7 +179,7 @@ public class NBIAAdapter
   }
   
   
-  private static String downloadLocation()
+  private static String defaultDownloadLocation()
   {
     String localClient= System.getProperty( "java.io.tmpdir" ) + 
       File.separator + clientDownloadLocation;
