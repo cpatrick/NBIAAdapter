@@ -7,21 +7,23 @@
   <property name="src" location="src"/>
   <property name="build" location="build"/>
   <property name="dist"  location="dist"/>
+	<property name="lib.root" location="/Users/cpatrick/"/>
 
   <!-- Set this to the location of the nbia grid clent jars. I
        downloaded nbia_grid_client-jars-full_4.5.zip from
        https://gforge.nci.nih.gov/frs/download.php/8985/nbia_grid_client-jars-full_4.5.zip.-->
-  <property name="lib.dir"
-	    value="/home/cpatrick/Builds/nbia_grid_client-jars-full_4.5/"
+  <property name="lib.nbia"
+	    value="${lib.root}/Builds/nbia_grid_client-jars-full_4.5/"
 	    />
-  <property name="lib.dir2"
-	    value="/home/cpatrick/Source/jargs/lib/"
+	<!-- Build jargs from git://github.com/purcell/jargs.git -->
+  <property name="lib.jargs"
+	    value="${lib.root}/Source/jargs/lib/"
 	    />
 
   <!-- classpath definition -->
   <path id="classpath"> 
-    <fileset dir="${lib.dir}" includes="**/*.jar" />
-    <fileset dir="${lib.dir2}" includes="**/*.jar" />
+    <fileset dir="${lib.nbia}" includes="**/*.jar" />
+    <fileset dir="${lib.jargs}" includes="**/*.jar" />
   </path>
 
   <target name="init">
