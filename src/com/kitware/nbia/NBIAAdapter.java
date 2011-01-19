@@ -1,3 +1,18 @@
+/**
+ * Copyright 2011 Kitware Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.kitware.nbia;
 
 import jargs.gnu.CmdLineParser;
@@ -36,6 +51,7 @@ public class NBIAAdapter
     Configurator configurator = new Configurator();
     String gridServiceUrl = configurator.getProps().getProperty( "gridServiceUrl" );
     String clientDownloadLocation = configurator.getProps().getProperty( "clientDownloadLocation" );
+    String testUUID = configurator.getProps().getProperty( "testUUID" );
     nbiaClient = new NBIASimpleClient( gridServiceUrl, clientDownloadLocation );
     
     try
@@ -75,7 +91,7 @@ public class NBIAAdapter
     if( test )
     {
       verbosePrint("Running Test from NBIA Wiki.");
-      runTest();
+      nbiaClient.fetchData( testUUID, "" );
     }
     
     // Run the application as intended 
@@ -105,8 +121,4 @@ public class NBIAAdapter
     }
   }
   
-  private static void runTest() throws Exception
-  {
-    nbiaClient.fetchData( "1.3.6.1.4.1.9328.50.1.8862", "" );
-  }
 }
