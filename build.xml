@@ -79,15 +79,12 @@
     </jar>
 
   </target>
-
-  <target name="run" depends="dist">
-    <java fork="true" classname="com.kitware.nbia.NBIAAdapter">
-      <classpath>
-        <path refid="classpath"/>
-        <path location="${dist}/lib/${ant.project.name}-${DSTAMP}.jar"/>
-      </classpath>
-    </java>
-  </target>
+	
+	<target name="release" depends="dist" description="generate a release" >
+	  <copy file="${dist}/lib/${ant.project.name}-${DSTAMP}.jar" 
+	        tofile="${dist}/lib/${ant.project.name}.jar"
+	        overwrite="true" />
+	</target>
 
   <target name="clean"
           description="clean up" >
