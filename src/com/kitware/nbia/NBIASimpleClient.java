@@ -31,99 +31,107 @@ import org.cagrid.transfer.context.client.helper.TransferClientHelper;
 import org.cagrid.transfer.context.stubs.types.TransferServiceContextReference;
 
 /**
+ * Simple abstraction of the NCIACoreServiceClient and its friends to allow for
+ * the easy download of datasets from an NBIA instance.
+ * 
  * @author Patrick Reynolds
- *
  */
 public class NBIASimpleClient {
 
+  private String gridServiceUrl;
+  private String clientDownloadLocation;
 
-	private String gridServiceUrl;
-	private String clientDownloadLocation;
+  /**
+   * Standard constructor
+   * 
+   * @param gridServiceUrl
+   *          - the URL of the NBIA Instance
+   * @param clientDownloadLocation
+   *          - the target location on disk
+   */
+  public NBIASimpleClient(String gridServiceUrl, String clientDownloadLocation) {
+    this.gridServiceUrl = gridServiceUrl;
+    this.clientDownloadLocation = clientDownloadLocation;
+  }
 
-	/**
-	 * 
-	 */
-	public NBIASimpleClient( String gridServiceUrl, String clientDownloadLocation ) 
-	{
-	  this.gridServiceUrl = gridServiceUrl;
-	  this.clientDownloadLocation = clientDownloadLocation;
-	}
+  /**
+   * Fetch a dataset with the given uuid from the NBIA instance indicated by the
+   * Grid Service URL and place it in the Client Download Location
+   * 
+   * @param uuid
+   *          - the series uuid of the dataset requested
+   * @param output
+   *          - the directory where the files end up.
+   * @throws Exception
+   */
+  public void fetchData(String uuid, String output) throws Exception {
+    String finalOutput;
+    if (output == "") {
+      finalOutput = defaultDownloadLocation();
+    } else {
+      finalOutput = output;
+    }
 
-	public void fetchData( String uuid, String output ) throws Exception
-	{
-		String finalOutput;
-		if( output == "" )
-		{
-			finalOutput = defaultDownloadLocation();
-		}
-		else
-		{
-			finalOutput = output;
-		}
+    NCIACoreServiceClient client = new NCIACoreServiceClient(
+        this.gridServiceUrl);
 
-		NCIACoreServiceClient client = new NCIACoreServiceClient( this.gridServiceUrl );
+    TransferServiceContextReference tscr = client
+        .retrieveDicomDataBySeriesUID(uuid);
 
-		TransferServiceContextReference tscr = 
-			client.retrieveDicomDataBySeriesUID( uuid );
+    TransferServiceContextClient tclient = new TransferServiceContextClient(
+        tscr.getEndpointReference());
 
-		TransferServiceContextClient tclient = 
-			new TransferServiceContextClient( tscr.getEndpointReference() );
+    InputStream istream = TransferClientHelper.getData(tclient
+        .getDataTransferDescriptor());
 
-		InputStream istream = 
-			TransferClientHelper.getData( tclient.getDataTransferDescriptor() );
+    if (istream == null) {
+      System.out.println("istream is null");
+      return;
+    }
 
-		if( istream == null ) 
-		{
-			System.out.println( "istream is null" );
-			return;
-		}
+    ZipInputStream zis = new ZipInputStream(istream);
+    ZipEntryInputStream zeis = null;
+    BufferedInputStream bis = null;
+    String unzzipedFile = finalOutput;
+    while (true) {
+      try {
+        zeis = new ZipEntryInputStream(zis);
+      } catch (EOFException e) {
+        break;
+      }
 
-		ZipInputStream zis = new ZipInputStream(istream);
-		ZipEntryInputStream zeis = null;
-		BufferedInputStream bis = null;
-		String unzzipedFile = finalOutput;
-		while(true) 
-		{
-			try 
-			{
-				zeis = new ZipEntryInputStream( zis );
-			} 
-			catch( EOFException e )
-			{
-				break;
-			}
+      bis = new BufferedInputStream(zeis);
 
-			bis = new BufferedInputStream(zeis);
+      byte[] data = new byte[8192];
+      int bytesRead = 0;
+      BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(
+          unzzipedFile + File.separator + zeis.getName()));
 
-			byte[] data = new byte[8192];
-			int bytesRead = 0;
-			BufferedOutputStream bos = 
-				new BufferedOutputStream( new FileOutputStream( unzzipedFile + 
-						File.separator + 
-						zeis.getName() ) );
+      while ((bytesRead = (bis.read(data, 0, data.length))) > 0) {
+        bos.write(data, 0, bytesRead);
+      }
+      bos.flush();
+      bos.close();
+    }
 
-			while( ( bytesRead = ( bis.read( data, 0, data.length ) ) ) > 0 )
-			{
-				bos.write( data, 0, bytesRead );
-			}
-			bos.flush();
-			bos.close();
-		}
+    zis.close();
+    tclient.destroy();
+  }
 
-		zis.close();
-		tclient.destroy();
-	}
-	
-	private String defaultDownloadLocation()
-	  {
-	    String localClient= System.getProperty( "java.io.tmpdir" ) + 
-	      File.separator + clientDownloadLocation;
-	    if( !new File( localClient ).exists() )
-	      {
-	      new File( localClient ).mkdir();
-	      }
-	    System.out.println( "Local download location: " + localClient );
-	    return localClient;
-	  }
+  /**
+   * Generate a platform-independent default data directory for fetching new
+   * datasets.
+   * 
+   * @return A string indicating the download location
+   */
+  private String defaultDownloadLocation() {
+    String localClient = System.getProperty("java.io.tmpdir") + File.separator
+        + clientDownloadLocation;
+    if (!new File(localClient).exists()) {
+      new File(localClient).mkdir();
+    }
+    System.out.println("Local download location: " + localClient);
+    return localClient;
+  }
 
 }
