@@ -25,11 +25,15 @@ import gov.nih.nci.ncia.domain.Series;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.InputStream;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.ZipInputStream;
 
 import org.cagrid.transfer.context.client.TransferServiceContextClient;
@@ -124,26 +128,30 @@ public class NBIASimpleClient {
     tclient.destroy();
   }
   
-  public void query( String query ) throws Exception {
+  public List<String> query( String query ) throws Exception {
+    
     NCIACoreServiceClient client = new NCIACoreServiceClient(
         this.gridServiceUrl);
-    FileReader xmlReader = new FileReader(query);
+    Reader xmlReader = new BufferedReader(new FileReader(query));
     CQLQuery cqlQuery = (CQLQuery) Utils.deserializeObject(xmlReader, CQLQuery.class);
     CQLQueryResults result = client.query(cqlQuery);
 
     if(result != null)  {
-         CQLQueryResultsIterator iter = new CQLQueryResultsIterator(result);
-         while (iter.hasNext()) {
-              Series obj = (Series)iter.next();
-              if (obj == null) {
-             System.out.println("something not right.  obj is null" );
-             continue;
-              }else{
-             System.out.println("Result series instance uid is " + obj.getInstanceUID() + " modality: " + obj.getModality());
-              }
-         }
-    }else{
-        System.out.println("No result found for " + query);
+      List<String> ret = new ArrayList<String>();
+      CQLQueryResultsIterator iter = new CQLQueryResultsIterator(result);
+      while (iter.hasNext()) {
+        Series obj = (Series)iter.next();
+        if (obj == null) {  
+          continue;
+        }
+        else {
+          ret.add(obj.getInstanceUID());
+        }
+      }
+      return ret;
+    }
+    else {
+      return null;
     }
   }
 

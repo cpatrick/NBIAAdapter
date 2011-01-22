@@ -15,6 +15,9 @@
  */
 package com.kitware.nbia;
 
+import java.util.Iterator;
+import java.util.List;
+
 import jargs.gnu.CmdLineParser;
 
 /**
@@ -98,7 +101,11 @@ public class NBIAAdapter {
     // Run a query based on the CQL file provided
     if (query != "") {
       verbosePrint("Running Query: " + query);
-      nbiaClient.query(query);
+      List<String> results = nbiaClient.query(query);
+      for( Iterator<String> itr = results.iterator(); itr.hasNext(); )
+      {
+        System.out.print( itr.next() + "\n" );
+      }
     }
 
     // Run the testing code from the NBIA wiki if asked to
