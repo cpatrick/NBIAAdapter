@@ -24,7 +24,7 @@ import jargs.gnu.CmdLineParser;
  * @author Patrick Reynolds
  */
 public class NBIAAdapter {
-  public static NBIASimpleClient nbiaClient;
+  
   private static Boolean verbose;
 
   /**
@@ -51,6 +51,9 @@ public class NBIAAdapter {
     CmdLineParser.Option uuidOption = parser.addHelp(
         parser.addStringOption('u', "uuid"),
         "Specify the series UUID you wish to download.");
+    CmdLineParser.Option queryOption = parser.addHelp(
+        parser.addStringOption('q', "query"),
+        "The CQL file on which to query.");
     CmdLineParser.Option outputOption = parser.addHelp(
         parser.addStringOption('o', "output"),
         "Specify where to place the output.");
@@ -61,7 +64,7 @@ public class NBIAAdapter {
     String clientDownloadLocation = configurator.getProps().getProperty(
         "clientDownloadLocation");
     String testUUID = configurator.getProps().getProperty("testUUID");
-    nbiaClient = new NBIASimpleClient(gridServiceUrl, clientDownloadLocation);
+    NBIASimpleClient nbiaClient = new NBIASimpleClient(gridServiceUrl, clientDownloadLocation);
 
     try {
       parser.parse(args);
@@ -77,6 +80,7 @@ public class NBIAAdapter {
     Boolean test = (Boolean) parser.getOptionValue(testOption, Boolean.FALSE);
     Boolean help = (Boolean) parser.getOptionValue(helpOption, Boolean.FALSE);
     String uuid = (String) parser.getOptionValue(uuidOption, "");
+    String query = (String) parser.getOptionValue(queryOption, "");
     String output = (String) parser.getOptionValue(outputOption, "");
 
     // Print usage information
@@ -87,8 +91,14 @@ public class NBIAAdapter {
 
     // Load the configuration file into the Configurator
     if (loadConfig != "") {
-      verbosePrint("Loading config: " + loadConfig);
+      verbosePrint("Loading Config: " + loadConfig);
       configurator.load(loadConfig);
+    }
+    
+    // Run a query based on the CQL file provided
+    if (query != "") {
+      verbosePrint("Running Query: " + query);
+      nbiaClient.query(query);
     }
 
     // Run the testing code from the NBIA wiki if asked to
@@ -104,7 +114,7 @@ public class NBIAAdapter {
 
     // Save the configuration
     if (saveConfig != "") {
-      verbosePrint("Saving config: " + saveConfig);
+      verbosePrint("Saving Config: " + saveConfig);
       configurator.save(saveConfig);
     }
   }

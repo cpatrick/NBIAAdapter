@@ -117,6 +117,10 @@ public class NBIASimpleClient {
     zis.close();
     tclient.destroy();
   }
+  
+  public void query( String query ) {
+    // TODO Add implementation
+  }
 
   /**
    * Generate a platform-independent default data directory for fetching new
