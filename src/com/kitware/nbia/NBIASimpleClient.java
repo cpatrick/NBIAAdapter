@@ -15,14 +15,20 @@
  */
 package com.kitware.nbia;
 
+import gov.nih.nci.cagrid.common.Utils;
+import gov.nih.nci.cagrid.cqlquery.CQLQuery;
+import gov.nih.nci.cagrid.cqlresultset.CQLQueryResults;
+import gov.nih.nci.cagrid.data.utilities.CQLQueryResultsIterator;
 import gov.nih.nci.cagrid.ncia.client.NCIACoreServiceClient;
 import gov.nih.nci.ivi.utils.ZipEntryInputStream;
+import gov.nih.nci.ncia.domain.Series;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.InputStream;
 import java.util.zip.ZipInputStream;
 
@@ -118,8 +124,27 @@ public class NBIASimpleClient {
     tclient.destroy();
   }
   
-  public void query( String query ) {
-    // TODO Add implementation
+  public void query( String query ) throws Exception {
+    NCIACoreServiceClient client = new NCIACoreServiceClient(
+        this.gridServiceUrl);
+    FileReader xmlReader = new FileReader(query);
+    CQLQuery cqlQuery = (CQLQuery) Utils.deserializeObject(xmlReader, CQLQuery.class);
+    CQLQueryResults result = client.query(cqlQuery);
+
+    if(result != null)  {
+         CQLQueryResultsIterator iter = new CQLQueryResultsIterator(result);
+         while (iter.hasNext()) {
+              Series obj = (Series)iter.next();
+              if (obj == null) {
+             System.out.println("something not right.  obj is null" );
+             continue;
+              }else{
+             System.out.println("Result series instance uid is " + obj.getInstanceUID() + " modality: " + obj.getModality());
+              }
+         }
+    }else{
+        System.out.println("No result found for " + query);
+    }
   }
 
   /**

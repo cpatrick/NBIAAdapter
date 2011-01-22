@@ -67,5 +67,14 @@
 	<classpathentry kind="lib" path="lib/nbia_grid_client-jars-full_4.5/axis.jar"/>
 	<classpathentry kind="lib" path="lib/nbia_grid_client-jars-full_4.5/addressing-1.0.jar"/>
 	<classpathentry kind="lib" path="lib/jargs/jargs.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cpatrick/Source/NBIAAdapter/lib/castor-1.3.1/castor-1.3.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cpatrick/Source/NBIAAdapter/lib/castor-1.3.1/castor-1.3.1-anttasks.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cpatrick/Source/NBIAAdapter/lib/castor-1.3.1/castor-1.3.1-codegen.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cpatrick/Source/NBIAAdapter/lib/castor-1.3.1/castor-1.3.1-core.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cpatrick/Source/NBIAAdapter/lib/castor-1.3.1/castor-1.3.1-ddlgen.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cpatrick/Source/NBIAAdapter/lib/castor-1.3.1/castor-1.3.1-jdo.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cpatrick/Source/NBIAAdapter/lib/castor-1.3.1/castor-1.3.1-xml.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cpatrick/Source/NBIAAdapter/lib/castor-1.3.1/castor-1.3.1-xml-schema.jar"/>
+	<classpathentry kind="lib" path="C:/Users/cpatrick/Source/NBIAAdapter/lib/castor-1.3.1/jta1.0.1.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>
