@@ -38,7 +38,7 @@ public class AutoHelpParser extends CmdLineParser {
   protected String exeName;
 
   /**
-   * 
+   * Add a help string to the given command-line option
    * @param option
    * @param helpString
    * @return
@@ -49,10 +49,17 @@ public class AutoHelpParser extends CmdLineParser {
     return option;
   }
 
+  /**
+   * Set the name of the executable to be used
+   * @param exeName
+   */
   public void setExeName(String exeName) {
     this.exeName = exeName;
   }
 
+  /**
+   * Print the usage information for each argument.
+   */
   public void printUsage() {
     System.err.println("Usage: " + this.exeName + " [options]");
     for (Iterator<String> i = optionHelpStrings.iterator(); i.hasNext();) {

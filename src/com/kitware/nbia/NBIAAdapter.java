@@ -27,6 +27,11 @@ public class NBIAAdapter {
   public static NBIASimpleClient nbiaClient;
   private static Boolean verbose;
 
+  /**
+   * Run when the class is executed
+   * @param args
+   * @throws Exception
+   */
   public static void main(String args[]) throws Exception {
     AutoHelpParser parser = new AutoHelpParser();
     parser.setExeName("NBIAAdapter");
@@ -108,7 +113,6 @@ public class NBIAAdapter {
    * Print things only if verbosity is turned on
    * 
    * @param out
-   *          the string to print
    */
   private static void verbosePrint(String out) {
     if (verbose) {
