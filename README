@@ -1,2 +1,20 @@
+Authors: Patrick Reynolds <patrick.reynolds@kitware.com>, Kitware Inc.
+License: APACHE 2.0
+
 The goal of this is a simple java application to provide a basic json interface
 to an NBIA server.
+
+Development Instructions
+------------------------
+To work on this tool, two sets of libraries are required: NBIAClient from the
+caGRID folks and jargs. The locations to get those are below.
+
+https://gforge.nci.nih.gov/frs/download.php/8985/nbia_grid_client-jars-full_4.5.zip
+Build jargs from git://github.com/purcell/jargs.git (git repo, this has to built from source)
+
+Once you have these jars, simply drop them into a folder called lib in the same directory as this
+readme file and you should be all set. I did the development in Eclipse (HELIOS), so that should 
+work out of the box. However, I'm also a big fan of using the command line so I'm supporting an
+ant build file. If that doesn't make everybody happy, I don't know what will. Let me know if you
+need any help building or using this thing. I'm a programmer not a technical writer, so every
+effort will be made to improve the documentation.
