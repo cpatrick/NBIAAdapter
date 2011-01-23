@@ -15,8 +15,11 @@
  */
 package com.kitware.nbia;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import org.apache.axis.AxisFault;
 
 import jargs.gnu.CmdLineParser;
 
@@ -35,7 +38,7 @@ public class NBIAAdapter {
    * @param args
    * @throws Exception
    */
-  public static void main(String args[]) throws Exception {
+  public static void main(String args[]) {
     AutoHelpParser parser = new AutoHelpParser();
     parser.setExeName("NBIAAdapter");
     CmdLineParser.Option verboseOption = parser.addHelp(
@@ -101,7 +104,20 @@ public class NBIAAdapter {
     // Run a query based on the CQL file provided
     if (query != "") {
       verbosePrint("Running Query: " + query);
-      List<String> results = nbiaClient.query(query);
+      List<String> results = new ArrayList<String>();
+      try {
+        results.addAll(nbiaClient.query(query));
+      } catch (AxisFault e) {
+        System.out.println("Internal Server Error at NBIA Site.");
+        if( verbose ) {
+          e.printStackTrace();
+        }
+      } catch (Exception e) {
+        System.out.println("Unknown Server Error");
+        if( verbose ) {
+          e.printStackTrace();
+        }   
+      }
       for( Iterator<String> itr = results.iterator(); itr.hasNext(); )
       {
         System.out.print( itr.next() + "\n" );
@@ -111,12 +127,37 @@ public class NBIAAdapter {
     // Run the testing code from the NBIA wiki if asked to
     if (test) {
       verbosePrint("Running Test from NBIA Wiki.");
+      try {
       nbiaClient.fetchData(testUUID, "");
+    } catch (AxisFault e) {
+      System.out.println("Internal Server Error at NBIA Site.");
+      if( verbose ) {
+        e.printStackTrace();
+      }
+    } catch (Exception e) {
+      System.out.println("Unknown Server Error");
+      if( verbose ) {
+        e.printStackTrace();
+      }   
+    }
     }
 
     // Run the application as intended
     if (uuid != "") {
+      verbosePrint("Fetching Data base on UUID");
+      try {
       nbiaClient.fetchData(uuid, output);
+    } catch (AxisFault e) {
+      System.out.println("Internal Server Error at NBIA Site.");
+      if( verbose ) {
+        e.printStackTrace();
+      }
+    } catch (Exception e) {
+      System.out.println("Unknown Server Error");
+      if( verbose ) {
+        e.printStackTrace();
+      }   
+    }
     }
 
     // Save the configuration
