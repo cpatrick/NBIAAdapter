@@ -25,10 +25,10 @@
   <property name="lib.root" location="lib"/>
 
   <!-- Set this to the location of the nbia grid clent jars. I
-       downloaded nbia_grid_client-jars-full_4.5.zip from
-       https://gforge.nci.nih.gov/frs/download.php/8985/nbia_grid_client-jars-full_4.5.zip-->
+       downloaded nbia_grid_client-jars-full_5.0.zip from
+       https://gforge.nci.nih.gov/frs/download.php/9090/nbia_grid_client-jars-full_5.0.zip-->
   <property name="lib.nbia"
-	    value="${lib.root}/nbia_grid_client-jars-full_4.5/"
+	    value="${lib.root}/nbia_grid_client-jars-full_5.0/"
 	    />
 	<!-- Build jargs from git://github.com/purcell/jargs.git -->
   <property name="lib.jargs"
