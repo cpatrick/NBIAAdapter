@@ -30,16 +30,58 @@ import jargs.gnu.CmdLineParser;
  * @author Patrick Reynolds
  */
 public class NBIAAdapter {
+
+  private static AutoHelpParser parser;
   
   private static Boolean verbose;
-
+  private static String saveConfig;
+  private static String loadConfig;
+  private static Boolean help;
+  private static String uuid;
+  private static String query;
+  private static String output;
+  
+  private static Configurator configurator;
+  private static String gridServiceUrl;
+  private static String clientDownloadLocation;
+  private static NBIASimpleClient nbiaClient;
+  
   /**
    * Run when the class is executed
    * @param args
    * @throws Exception
    */
   public static void main(String args[]) {
-    AutoHelpParser parser = new AutoHelpParser();
+    
+    setupParser(args);
+    
+    loadConfiguration();
+
+    // Run a query based on the CQL file provided
+    if (query != "") {
+      verbosePrint("Running Query: " + query);
+      performQuery();
+    }
+
+    // Run the application as intended
+    if (uuid != "") {
+      verbosePrint("Fetching Data base on UUID");
+      fetchData();
+    }
+
+    // Save the configuration
+    if (saveConfig != "") {
+      verbosePrint("Saving Config: " + saveConfig);
+      configurator.save(saveConfig);
+    }
+  }
+
+  /**
+   * setup the CLI parser
+   * @param args - the args from main
+   */
+  private static void setupParser( String[] args ) {
+    parser = new AutoHelpParser();
     parser.setExeName("NBIAAdapter");
     CmdLineParser.Option verboseOption = parser.addHelp(
         parser.addBooleanOption('v', "verbose"),
@@ -50,8 +92,6 @@ public class NBIAAdapter {
     CmdLineParser.Option loadConfigOption = parser.addHelp(
         parser.addStringOption('l', "loadconfig"),
         "Load parameters from the specified config file.");
-    CmdLineParser.Option testOption = parser.addHelp(
-        parser.addBooleanOption('t', "test"), "Run the standard test.");
     CmdLineParser.Option helpOption = parser.addHelp(
         parser.addBooleanOption('h', "help"), "Print this help message");
     CmdLineParser.Option uuidOption = parser.addHelp(
@@ -64,14 +104,6 @@ public class NBIAAdapter {
         parser.addStringOption('o', "output"),
         "Specify where to place the output.");
 
-    Configurator configurator = new Configurator();
-    String gridServiceUrl = configurator.getProps().getProperty(
-        "gridServiceUrl");
-    String clientDownloadLocation = configurator.getProps().getProperty(
-        "clientDownloadLocation");
-    String testUUID = configurator.getProps().getProperty("testUUID");
-    NBIASimpleClient nbiaClient = new NBIASimpleClient(gridServiceUrl, clientDownloadLocation);
-
     try {
       parser.parse(args);
     } catch (CmdLineParser.OptionException e) {
@@ -81,19 +113,30 @@ public class NBIAAdapter {
     }
 
     verbose = (Boolean) parser.getOptionValue(verboseOption, Boolean.FALSE);
-    String saveConfig = (String) parser.getOptionValue(saveConfigOption, "");
-    String loadConfig = (String) parser.getOptionValue(loadConfigOption, "");
-    Boolean test = (Boolean) parser.getOptionValue(testOption, Boolean.FALSE);
-    Boolean help = (Boolean) parser.getOptionValue(helpOption, Boolean.FALSE);
-    String uuid = (String) parser.getOptionValue(uuidOption, "");
-    String query = (String) parser.getOptionValue(queryOption, "");
-    String output = (String) parser.getOptionValue(outputOption, "");
-
+    saveConfig = (String) parser.getOptionValue(saveConfigOption, "");
+    loadConfig = (String) parser.getOptionValue(loadConfigOption, "");
+    help = (Boolean) parser.getOptionValue(helpOption, Boolean.FALSE);
+    uuid = (String) parser.getOptionValue(uuidOption, "");
+    query = (String) parser.getOptionValue(queryOption, "");
+    output = (String) parser.getOptionValue(outputOption, "");
+    
     // Print usage information
     if (help) {
       parser.printUsage();
       System.exit(0);
     }
+  }
+  
+  /**
+   * Use the configurator to load the salient options
+   */
+  private static void loadConfiguration() {
+    configurator = new Configurator();
+    gridServiceUrl = configurator.getProps().getProperty(
+        "gridServiceUrl");
+    clientDownloadLocation = configurator.getProps().getProperty(
+        "clientDownloadLocation");
+    nbiaClient = new NBIASimpleClient(gridServiceUrl, clientDownloadLocation);
 
     // Load the configuration file into the Configurator
     if (loadConfig != "") {
@@ -101,51 +144,13 @@ public class NBIAAdapter {
       configurator.load(loadConfig);
     }
     
-    // Run a query based on the CQL file provided
-    if (query != "") {
-      verbosePrint("Running Query: " + query);
-      List<String> results = new ArrayList<String>();
-      try {
-        results.addAll(nbiaClient.query(query));
-      } catch (AxisFault e) {
-        System.out.println("Internal Server Error at NBIA Site.");
-        if( verbose ) {
-          e.printStackTrace();
-        }
-      } catch (Exception e) {
-        System.out.println("Unknown Server Error");
-        if( verbose ) {
-          e.printStackTrace();
-        }   
-      }
-      for( Iterator<String> itr = results.iterator(); itr.hasNext(); )
-      {
-        System.out.print( itr.next() + "\n" );
-      }
-    }
-
-    // Run the testing code from the NBIA wiki if asked to
-    if (test) {
-      verbosePrint("Running Test from NBIA Wiki.");
-      try {
-      nbiaClient.fetchData(testUUID, "");
-    } catch (AxisFault e) {
-      System.out.println("Internal Server Error at NBIA Site.");
-      if( verbose ) {
-        e.printStackTrace();
-      }
-    } catch (Exception e) {
-      System.out.println("Unknown Server Error");
-      if( verbose ) {
-        e.printStackTrace();
-      }   
-    }
-    }
-
-    // Run the application as intended
-    if (uuid != "") {
-      verbosePrint("Fetching Data base on UUID");
-      try {
+  }
+  
+  /**
+   * Use the client to fetch the data with the given uuid.
+   */
+  private static void fetchData() {
+    try {
       nbiaClient.fetchData(uuid, output);
     } catch (AxisFault e) {
       System.out.println("Internal Server Error at NBIA Site.");
@@ -158,19 +163,37 @@ public class NBIAAdapter {
         e.printStackTrace();
       }   
     }
+  }
+  
+  /**
+   * 
+   */
+  private static void performQuery()
+  {
+    List<String> results = new ArrayList<String>();
+    try {
+      results.addAll(nbiaClient.query(query));
+    } catch (AxisFault e) {
+      System.out.println("Internal Server Error at NBIA Site.");
+      if( verbose ) {
+        e.printStackTrace();
+      }
+    } catch (Exception e) {
+      System.out.println("Unknown Server Error");
+      if( verbose ) {
+        e.printStackTrace();
+      }   
     }
-
-    // Save the configuration
-    if (saveConfig != "") {
-      verbosePrint("Saving Config: " + saveConfig);
-      configurator.save(saveConfig);
+    for( Iterator<String> itr = results.iterator(); itr.hasNext(); )
+    {
+      System.out.print( itr.next() + "\n" );
     }
   }
-
+  
   /**
    * Print things only if verbosity is turned on
    * 
-   * @param out
+   * @param out - the string to print
    */
   private static void verbosePrint(String out) {
     if (verbose) {

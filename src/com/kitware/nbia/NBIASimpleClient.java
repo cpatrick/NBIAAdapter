@@ -87,7 +87,7 @@ public class NBIASimpleClient {
         this.gridServiceUrl);
 
     TransferServiceContextReference tscr = client
-        .retrieveDicomDataBySeriesUID(uuid);
+    .retrieveDicomDataBySeriesUID(uuid);
 
     TransferServiceContextClient tclient = new TransferServiceContextClient(
         tscr.getEndpointReference());
@@ -128,9 +128,17 @@ public class NBIASimpleClient {
     zis.close();
     tclient.destroy();
   }
-  
+
+
+  /**
+   * Run a CQL query on the target NBIA instance and return the results in a
+   * List container.
+   * @param query - Filename for the query
+   * @return a list of uuids.
+   * @throws All exceptions related to file reading and collection
+   */
   public List<String> query( String query ) throws Exception {
-    
+
     NCIACoreServiceClient client = new NCIACoreServiceClient(
         this.gridServiceUrl);
     Reader xmlReader = new BufferedReader(new FileReader(query));
@@ -164,7 +172,7 @@ public class NBIASimpleClient {
    */
   private String defaultDownloadLocation() {
     String localClient = System.getProperty("java.io.tmpdir") + File.separator
-        + clientDownloadLocation;
+    + clientDownloadLocation;
     if (!new File(localClient).exists()) {
       new File(localClient).mkdir();
     }

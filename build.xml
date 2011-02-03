@@ -14,90 +14,90 @@
   limitations under the License.
 -->
 <project name="NBIAAdapter" default="dist" basedir=".">
-  <description>
+	<description>
     Java code to interface with NBIA.
   </description>
-  
-  <!-- set global properties for this build -->
-  <property name="src" location="src"/>
-  <property name="build" location="build"/>
-  <property name="dist"  location="dist"/>
-  <property name="lib.root" location="lib"/>
 
-  <!-- Set this to the location of the nbia grid clent jars. I
+	<!-- set global properties for this build -->
+	<property name="src" location="src"/>
+	<property name="build" location="build"/>
+	<property name="dist"  location="dist"/>
+	<property name="lib.root" location="lib"/>
+
+	<!-- Set this to the location of the nbia grid clent jars. I
        downloaded nbia_grid_client-jars-full_5.0.zip from
        https://gforge.nci.nih.gov/frs/download.php/9090/nbia_grid_client-jars-full_5.0.zip-->
-  <property name="lib.nbia"
+	<property name="lib.nbia"
 	    value="${lib.root}/nbia_grid_client-jars-full_5.0/"
 	    />
 	<!-- Build jargs from git://github.com/purcell/jargs.git -->
-  <property name="lib.jargs"
+	<property name="lib.jargs"
 	    value="${lib.root}/jargs/"
 	    />
 	<!-- We also need castor apparently: http://dist.codehaus.org/castor/1.3.1/castor-1.3.1.zip -->
 	<property name="lib.castor"
   value="${lib.root}/castor-1.3.1/" />
 
-  <!-- classpath definition -->
-  <path id="classpath"> 
-    <fileset dir="${lib.nbia}" includes="**/*.jar" />
-    <fileset dir="${lib.jargs}" includes="**/*.jar" />
-  	<fileset dir="${lib.castor}" includes="**/*.jar" />
-  </path>
+	<!-- classpath definition -->
+	<path id="classpath">
+		<fileset dir="${lib.nbia}" includes="**/*.jar" />
+		<fileset dir="${lib.jargs}" includes="**/*.jar" />
+		<fileset dir="${lib.castor}" includes="**/*.jar" />
+	</path>
 
-  <target name="init">
+	<target name="init">
 
-    <!-- Create the time stamp -->
-    <tstamp />
+		<!-- Create the time stamp -->
+		<tstamp />
 
-    <!-- Create the build directory structure used by compile -->
-    <mkdir dir="${build}"/>
+		<!-- Create the build directory structure used by compile -->
+		<mkdir dir="${build}"/>
 
-  </target>
+	</target>
 
-  <target name="compile" 
+	<target name="compile" 
 	  depends="init" 
 	  description="compile the source" >
 
-    <!-- Compile the java code from ${src} into ${build} -->
-    <javac srcdir="${src}" destdir="${build}" classpathref="classpath"
+		<!-- Compile the java code from ${src} into ${build} -->
+		<javac srcdir="${src}" destdir="${build}" classpathref="classpath"
 	   includeantruntime="false" />
 
-  </target>
+	</target>
 
-  <target name="dist" depends="compile"
+	<target name="dist" depends="compile"
         description="generate the distribution" >
 
-    <!-- Create the distribution directory -->
-    <mkdir dir="${dist}/lib"/>
+		<!-- Create the distribution directory -->
+		<mkdir dir="${dist}/lib"/>
 
-    <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
-    <jar jarfile="${dist}/lib/${ant.project.name}-${DSTAMP}.jar"
+		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
+		<jar jarfile="${dist}/lib/${ant.project.name}-${DSTAMP}.jar"
 	 basedir="${build}">
-      <manifest>
-	<attribute name="Main-Class"
+			<manifest>
+				<attribute name="Main-Class"
 		   value="com.kitware.nbia.NBIAAdapter" />
-      </manifest>
-      <zipgroupfileset excludes="META-INF/*.SF" dir="${lib.jargs}" includes="*.jar"/>
-    	<zipgroupfileset excludes="META-INF/*.SF" dir="${lib.castor}" includes="*.jar"/>
-      
-    </jar>
+			</manifest>
+			<zipgroupfileset excludes="META-INF/*.SF" dir="${lib.jargs}" includes="*.jar"/>
+			<zipgroupfileset excludes="META-INF/*.SF" dir="${lib.castor}" includes="*.jar"/>
 
-  </target>
-	
+		</jar>
+
+	</target>
+
 	<target name="release" depends="dist" description="generate a release" >
-	  <copy file="${dist}/lib/${ant.project.name}-${DSTAMP}.jar" 
+		<copy file="${dist}/lib/${ant.project.name}-${DSTAMP}.jar" 
 	        tofile="${dist}/lib/${ant.project.name}.jar"
 	        overwrite="true" />
 	</target>
 
-  <target name="clean"
+	<target name="clean"
           description="clean up" >
 
-    <!-- Delete the ${build} and ${dist} dinrectory trees -->
-    <delete dir="${build}"/>
-    <delete dir="${dist}"/>
+		<!-- Delete the ${build} and ${dist} dinrectory trees -->
+		<delete dir="${build}"/>
+		<delete dir="${dist}"/>
 
-  </target>
+	</target>
 
 </project>
