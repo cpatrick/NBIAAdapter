@@ -47,6 +47,9 @@ public class Configurator {
     props.setProperty("gridServiceUrl",
         "http://imaging.nci.nih.gov/wsrf/services/cagrid/NCIACoreService");
     props.setProperty("clientDownloadLocation", "NBIAGridClientDownload");
+    props.setProperty("serverPort", "8080");
+    props.setProperty("serverWorkers", "5");
+    props.setProperty("serverTimeout", "0");
   }
 
   /**

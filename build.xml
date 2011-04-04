@@ -28,21 +28,26 @@
        downloaded nbia_grid_client-jars-full_5.0.zip from
        https://gforge.nci.nih.gov/frs/download.php/9090/nbia_grid_client-jars-full_5.0.zip-->
 	<property name="lib.nbia"
-	    value="${lib.root}/nbia_grid_client-jars-full_5.0/"
+                  value="${lib.root}/nbia_grid_client-jars-full_5.0/"
 	    />
 	<!-- Build jargs from git://github.com/purcell/jargs.git -->
 	<property name="lib.jargs"
-	    value="${lib.root}/jargs/"
+                  value="${lib.root}/jargs/"
 	    />
 	<!-- We also need castor apparently: http://dist.codehaus.org/castor/1.3.1/castor-1.3.1.zip -->
 	<property name="lib.castor"
-  value="${lib.root}/castor-1.3.1/" />
+		  value="${lib.root}/castor-1.3.1/" />
+
+	<!-- We use google-gson for json processing in Java. It's pretty nice: http://google-gson.googlecode.com/files/google-gson-1.6-release.zip -->
+	<property name="lib.gson"
+		  value="${lib.root}/google-gson-1.6/" />
 
 	<!-- classpath definition -->
 	<path id="classpath">
 		<fileset dir="${lib.nbia}" includes="**/*.jar" />
 		<fileset dir="${lib.jargs}" includes="**/*.jar" />
 		<fileset dir="${lib.castor}" includes="**/*.jar" />
+		<fileset dir="${lib.gson}" includes="**/*.jar" />
 	</path>
 
 	<target name="init">
@@ -80,6 +85,7 @@
 			</manifest>
 			<zipgroupfileset excludes="META-INF/*.SF" dir="${lib.jargs}" includes="*.jar"/>
 			<zipgroupfileset excludes="META-INF/*.SF" dir="${lib.castor}" includes="*.jar"/>
+			<zipgroupfileset excludes="META-INF/*.SF" dir="${lib.gson}" includes="*.jar"/>
 
 		</jar>
 

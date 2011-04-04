@@ -20,29 +20,86 @@ package com.kitware.nbia;
  * Implementation notes are in WebServer.html, and also
  * as comments in the source code.
  */
+import jargs.gnu.CmdLineParser;
+
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Date;
-import java.util.Properties;
+import java.util.HashMap;
 import java.util.Vector;
+
+import org.apache.axis.AxisFault;
+
+import com.google.gson.Gson;
 
 public class NBIAAdapterHTTPServer implements HttpConstants {
 
-  /* static class data/methods */
+  private static AutoHelpParser parser;
+  
+  public static Boolean verbose;
+  private static String saveConfig;
+  private static String loadConfig;
+  private static String logFile;
+  private static Boolean help;
+  
+  private static Configurator configurator;
+  private static String gridServiceUrl;
+  private static String clientDownloadLocation;
+  
+  protected String serverName = "NBIAAdapter";
 
-  /* print to stdout */
-  protected static void p(String s) {
-    System.out.println(s);
+  static Vector<Worker> threads = new Vector<Worker>();
+  
+  static HashMap<String,Response> uuidStatus = new HashMap<String,Response>();
+
+  static int timeout;
+  private static int port;
+  static int workers;
+  
+  protected static PrintStream log = null;
+
+  public static String getStatus(String uuid)
+  {
+    Gson json = new Gson();
+    synchronized(uuidStatus)
+    {
+      if( !uuidStatus.containsKey(uuid))
+      {
+        uuidStatus.put(uuid, new Response("Download Not Started.", false));
+      }
+      return json.toJson(uuidStatus.get(uuid));
+    }
   }
-
+  
+  public static void setDone(String uuid)
+  {
+    synchronized(uuidStatus)
+    {
+      uuidStatus.put(uuid, new Response("Download Complete.",true));
+    }
+  }
+  
+  public static void setFailure(String uuid)
+  {
+    synchronized(uuidStatus)
+    {
+      uuidStatus.put(uuid, new Response("Download Failed.",false));      
+    }
+  }
+  
+  public static void setStatus(String uuid, Response r)
+  {
+    synchronized(uuidStatus)
+    {
+      uuidStatus.put(uuid, r);
+    }
+  }
+  
   /* print to the log file */
   protected static void log(String s) {
     synchronized (log) {
@@ -50,86 +107,124 @@ public class NBIAAdapterHTTPServer implements HttpConstants {
       log.flush();
     }
   }
-
-  protected String serverName = "NBIAAdapter";
-
-  static PrintStream log = null;
-  /*
-   * our server's configuration information is stored in these properties
-   */
-  protected static Properties props = new Properties();
-
-  /* Where worker threads stand idle */
-  static Vector<Worker> threads = new Vector<Worker>();
-
-  /* the web server's virtual root */
-  static File root;
-
-  /* timeout on client connections */
-  static int timeout = 0;
-
-  /* max # worker threads */
-  static int workers = 5;
-
-  /* load www-server.properties from java.home */
-  static void loadProps() throws IOException {
-    File f = new File(System.getProperty("java.home") + File.separator + "lib"
-        + File.separator + "www-server.properties");
-    if (f.exists()) {
-      InputStream is = new BufferedInputStream(new FileInputStream(f));
-      props.load(is);
-      is.close();
-      String r = props.getProperty("root");
-      if (r != null) {
-        root = new File(r);
-        if (!root.exists()) {
-          throw new Error(root + " doesn't exist as server root");
-        }
-      }
-      r = props.getProperty("timeout");
-      if (r != null) {
-        timeout = Integer.parseInt(r);
-      }
-      r = props.getProperty("workers");
-      if (r != null) {
-        workers = Integer.parseInt(r);
-      }
-      r = props.getProperty("log");
-      if (r != null) {
-        p("opening log file: " + r);
-        log = new PrintStream(new BufferedOutputStream(new FileOutputStream(r)));
-      }
-    }
-
-    /* if no properties were specified, choose defaults */
-    if (root == null) {
-      root = new File(System.getProperty("user.dir"));
-    }
-    if (timeout <= 1000) {
-      timeout = 5000;
-    }
-    if (workers < 25) {
-      workers = 5;
-    }
-    if (log == null) {
-      p("logging to stdout");
-      log = System.out;
-    }
-  }
+  
 
   static void printProps() {
-    p("root=" + root);
-    p("timeout=" + timeout);
-    p("workers=" + workers);
+    verbosePrint("Port = " + port);
+    verbosePrint("Timeout = " + timeout);
+    verbosePrint("Workers = " + workers);
+  }
+  
+  /**
+   * setup the CLI parser
+   * @param args - the arguments from main
+   */
+  private static void setupParser( String[] args ) {
+    parser = new AutoHelpParser();
+    parser.setExeName("NBIAAdapter");
+    CmdLineParser.Option verboseOption = parser.addHelp(
+        parser.addBooleanOption('v', "verbose"),
+        "Print additional information at each step.");
+    CmdLineParser.Option saveConfigOption = parser.addHelp(
+        parser.addStringOption('s', "saveconfig"),
+        "Save parameters to the specified config file.");
+    CmdLineParser.Option loadConfigOption = parser.addHelp(
+        parser.addStringOption('l', "loadconfig"),
+        "Load parameters from the specified config file.");
+    CmdLineParser.Option helpOption = parser.addHelp(
+        parser.addBooleanOption('h', "help"), "Print this help message");
+    CmdLineParser.Option portOption = parser.addHelp(
+        parser.addIntegerOption('p', "port"), 
+        "The port that the server will listen on.");
+    CmdLineParser.Option workersOption = parser.addHelp(
+        parser.addIntegerOption('w', "workers"), 
+        "The number of worker threads the server will use to handle requests.");
+    CmdLineParser.Option timeoutOption = parser.addHelp(
+        parser.addIntegerOption('t', "timeout"), 
+        "The amount of time to keep a connection open (0 for unlimited)");
+    CmdLineParser.Option logOption = parser.addHelp(
+        parser.addStringOption('o', "log"),
+        "Log the server data to a specified file (stdout of not specified).");
+
+    try {
+      parser.parse(args);
+    } catch (CmdLineParser.OptionException e) {
+      System.err.println(e.getMessage());
+      parser.printUsage();
+      System.exit(2);
+    }
+
+    verbose = (Boolean) parser.getOptionValue(verboseOption, Boolean.FALSE);
+    saveConfig = (String) parser.getOptionValue(saveConfigOption, "");
+    loadConfig = (String) parser.getOptionValue(loadConfigOption, "");
+    help = (Boolean) parser.getOptionValue(helpOption, Boolean.FALSE);
+    port = (Integer) parser.getOptionValue(portOption, 8080);
+    workers = (Integer) parser.getOptionValue(workersOption, 5);
+    timeout = (Integer) parser.getOptionValue(timeoutOption, 0);
+    logFile = (String) parser.getOptionValue(logOption, "");
+    
+    // Print usage information
+    if (help) {
+      parser.printUsage();
+      System.exit(0);
+    }
+  }
+  
+  /**
+   * Use the configurator to load the salient options
+   */
+  private static void loadConfiguration() {
+    configurator = new Configurator();
+    
+    // Load the configuration file into the Configurator
+    if (loadConfig != "") {
+      verbosePrint("Loading Config: " + loadConfig);
+      configurator.load(loadConfig);
+      
+      port = Integer.parseInt(configurator.getProps().getProperty(
+        "serverPort"));
+      workers = Integer.parseInt(configurator.getProps().getProperty(
+        "serverWorkers"));
+      timeout = Integer.parseInt(configurator.getProps().getProperty(
+        "serverTimeout"));
+    }
+    
+    gridServiceUrl = configurator.getProps().getProperty(
+      "gridServiceUrl");
+    clientDownloadLocation = configurator.getProps().getProperty(
+      "clientDownloadLocation");
+    
+  }
+  
+  public static NBIASimpleClient setupClient()
+  {
+    return new NBIASimpleClient(gridServiceUrl, clientDownloadLocation);
   }
 
-  public static void main(String[] a) throws Exception {
-    int port = 8080;
-    if (a.length > 0) {
-      port = Integer.parseInt(a[0]);
+  public static void main(String[] args) throws Exception {
+    
+    setupParser(args);
+    
+    loadConfiguration();
+
+    if( logFile == "")
+    {
+      log = System.out;
     }
-    loadProps();
+    else
+    {
+      File file = new File(logFile);
+      log = new PrintStream(file);
+    }
+    
+    // Save the configuration
+    if (saveConfig != "") {
+      verbosePrint("Saving Config: " + saveConfig);
+      configurator.save(saveConfig);
+    }
+    
     printProps();
+    
     /* start worker threads */
     for (int i = 0; i < workers; ++i) {
       Worker w = new Worker();
@@ -155,6 +250,32 @@ public class NBIAAdapterHTTPServer implements HttpConstants {
         }
       }
     }
+  }
+
+/**
+ * Print things only if verbosity is turned on
+ * 
+ * @param out - the string to print
+ */
+private static void verbosePrint(String out) {
+  if (verbose) {
+    System.out.println(out);
+  }
+}
+
+}
+
+class Response
+{  
+  public String message;
+  public boolean ok;
+  Response()
+  {
+  }
+  Response(String m, boolean ok)
+  {
+    this.message = new String(m);
+    this.ok = ok;
   }
 }
 
@@ -278,14 +399,100 @@ class Worker extends NBIAAdapterHTTPServer implements HttpConstants, Runnable {
       for (int i = index; i < bound; ++i) {
         target[targetIndex++] = buf[i];
       }
-
-      send404(ps, target);
+      
+      String strTarget = new String(target);
+      String[] tokens = strTarget.split("/");
+      if( tokens[1].equals("fetch") && tokens.length >= 3)
+      {
+        fetchUUID(ps,tokens[2]);
+      }
+      if( tokens[1].equals("status") && tokens.length >= 3)
+      {
+        statusUUID(ps,tokens[2]);
+      }
+      else
+      {
+        send404(ps, target);
+      }
+      log(new String(target));
 
     } finally {
       s.close();
     }
   }
-
+  
+  protected void fetchUUID(PrintStream ps, String uuid)
+  {
+    log("From " + s.getInetAddress().getHostAddress());
+    log("Fetching " + uuid);
+    NBIASimpleClient nbia = setupClient();
+    try {
+      setStatus(uuid, new Response("Download Started", false));
+      sendStatus(ps,uuid);
+      nbia.fetchData(uuid, ""); // THE LONG PROCESS
+      setDone(uuid);
+    } catch (AxisFault e) {
+      String err = "Internal Server Error at NBIA Site.";
+      log(err);
+      setStatus(uuid, new Response(err,false));
+      e.printStackTrace(log);
+    } catch(IOException e) {
+      String err = "IOException when writing to socket stream.";
+      log(err);
+      setStatus(uuid, new Response(err,false));
+      e.printStackTrace(log);
+    } catch (Exception e) {
+      String err = "Unknown Server Error";
+      log(err);
+      setStatus(uuid, new Response(err,false));
+      e.printStackTrace(log);
+    }
+  }
+  
+  protected void statusUUID(PrintStream ps, String uuid)
+  {
+    log("From " + s.getInetAddress().getHostAddress());
+    log("Getting status for " + uuid);
+    try {
+      sendStatus(ps,uuid);
+    } catch(IOException e) {
+      log("IOException when writing to socket stream.");
+      e.printStackTrace(log);
+    }
+  }
+  
+  /**
+   * Helper function for sending the download status in a HTTP reply.
+   * @param ps - the socket's stream object
+   * @param uuid - the uuid of the dataset
+   * @throws IOException
+   */
+  protected void sendStatus(PrintStream ps, String uuid) throws IOException
+  {
+    String response = getStatus(uuid);
+    ps.print("HTTP/1.0 " + HTTP_OK + " OK");
+    ps.write(EOL);
+    ps.print("Server: " + serverName);
+    ps.write(EOL);
+    ps.print("Last Modified: " + new Date());
+    ps.write(EOL);
+    ps.print("Content-Type: application/json");
+    ps.write(EOL);      
+    ps.print("Content-length: " + response.length());
+    ps.write(EOL);
+    ps.write(EOL);
+    ps.print(response);
+    ps.print(EOL);
+    ps.flush();
+    s.close();
+  }
+  
+  /**
+   * Send a 404 to the server if we don't know how to handle the request.
+   * @param ps
+   * @param buf
+   * @throws IOException
+   */
   void send404(PrintStream ps, byte[] buf) throws IOException {
     log("From " + s.getInetAddress().getHostAddress());
     log("Asking for " + new String(buf));
@@ -293,7 +500,7 @@ class Worker extends NBIAAdapterHTTPServer implements HttpConstants, Runnable {
         + "The requested resource was not found.\n";
     ps.print("HTTP/1.0 " + HTTP_NOT_FOUND + " not found");
     ps.write(EOL);
-    ps.print("Server: " + this.serverName);
+    ps.print("Server: " + serverName);
     ps.write(EOL);
     ps.print("Last Modified: " + new Date());
     ps.write(EOL);
@@ -306,49 +513,4 @@ class Worker extends NBIAAdapterHTTPServer implements HttpConstants, Runnable {
     s.close();
   }
 
-}
-
-interface HttpConstants {
-  /** 2XX: generally "OK" */
-  public static final int HTTP_OK = 200;
-  public static final int HTTP_CREATED = 201;
-  public static final int HTTP_ACCEPTED = 202;
-  public static final int HTTP_NOT_AUTHORITATIVE = 203;
-  public static final int HTTP_NO_CONTENT = 204;
-  public static final int HTTP_RESET = 205;
-  public static final int HTTP_PARTIAL = 206;
-
-  /** 3XX: relocation/redirect */
-  public static final int HTTP_MULT_CHOICE = 300;
-  public static final int HTTP_MOVED_PERM = 301;
-  public static final int HTTP_MOVED_TEMP = 302;
-  public static final int HTTP_SEE_OTHER = 303;
-  public static final int HTTP_NOT_MODIFIED = 304;
-  public static final int HTTP_USE_PROXY = 305;
-
-  /** 4XX: client error */
-  public static final int HTTP_BAD_REQUEST = 400;
-  public static final int HTTP_UNAUTHORIZED = 401;
-  public static final int HTTP_PAYMENT_REQUIRED = 402;
-  public static final int HTTP_FORBIDDEN = 403;
-  public static final int HTTP_NOT_FOUND = 404;
-  public static final int HTTP_BAD_METHOD = 405;
-  public static final int HTTP_NOT_ACCEPTABLE = 406;
-  public static final int HTTP_PROXY_AUTH = 407;
-  public static final int HTTP_CLIENT_TIMEOUT = 408;
-  public static final int HTTP_CONFLICT = 409;
-  public static final int HTTP_GONE = 410;
-  public static final int HTTP_LENGTH_REQUIRED = 411;
-  public static final int HTTP_PRECON_FAILED = 412;
-  public static final int HTTP_ENTITY_TOO_LARGE = 413;
-  public static final int HTTP_REQ_TOO_LONG = 414;
-  public static final int HTTP_UNSUPPORTED_TYPE = 415;
-
-  /** 5XX: server error */
-  public static final int HTTP_SERVER_ERROR = 500;
-  public static final int HTTP_INTERNAL_ERROR = 501;
-  public static final int HTTP_BAD_GATEWAY = 502;
-  public static final int HTTP_UNAVAILABLE = 503;
-  public static final int HTTP_GATEWAY_TIMEOUT = 504;
-  public static final int HTTP_VERSION = 505;
 }

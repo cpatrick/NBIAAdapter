@@ -7,11 +7,13 @@ to an NBIA server.
 Development Instructions
 ------------------------
 To work on this tool, three sets of libraries are required: NBIAClient from the
-caGRID folks, castor, and jargs. The locations to get those are below.
+caGRID folks, castor, jargs, and google-gson. The locations to get those are 
+below.
 
 https://gforge.nci.nih.gov/frs/download.php/9090/nbia_grid_client-jars-full_5.0.zip
 Build jargs from git://github.com/purcell/jargs.git (git repo, this has to built from source)
 http://dist.codehaus.org/castor/1.3.1/castor-1.3.1.zip
+http://google-gson.googlecode.com/files/google-gson-1.6-release.zip
 
 Once you have these jars, simply drop them into a folder called lib in the
 same directory as this readme file and you should be all set. I did the 
